@@ -205,8 +205,15 @@ static FeatureBitset getFeatures(StringRef CPU, StringRef TuneCPU, StringRef FS,
   return Bits;
 }
 
+bool Cpu0DisableUnreconginizedMessage = false;
+
 void MCSubtargetInfo::InitMCProcessorInfo(StringRef CPU, StringRef TuneCPU,
                                           StringRef FS) {
+  #if 1 // Disable reconginized processor message. For Cpu0
+  if (TargetTriple.getArch() == llvm::Triple::cpu0 ||
+      TargetTriple.getArch() == llvm::Triple::cpu0el)
+    Cpu0DisableUnreconginizedMessage = true;
+  #endif
   FeatureBits = getFeatures(CPU, TuneCPU, FS, ProcDesc, ProcFeatures);
   if (!TuneCPU.empty())
     CPUSchedModel = &getSchedModelForCPU(TuneCPU);
@@ -312,6 +319,10 @@ const MCSchedModel &MCSubtargetInfo::getSchedModelForCPU(StringRef CPU) const {
 
   if (!CPUEntry) {
     if (CPU != "help") // Don't error if the user asked for help.
+      #if 1 // Disable reconginized processor message. For Cpu0
+      if (TargetTriple.getArch() != llvm::Triple::cpu0 &&
+          TargetTriple.getArch() != llvm::Triple::cpu0el)
+      #endif
       errs() << "'" << CPU
              << "' is not a recognized processor for this target"
              << " (ignoring processor)\n";
