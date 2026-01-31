@@ -18,15 +18,6 @@
 //  rc      - src reg (on a 3 reg instr).
 //  cx      - immediate
 //
-/* NOTE(fh):
- * This file defines instruction formats: reusable "shapes" of encoding
- * Encoding focused
- * Define base class Cpu0Inst and derived format class:
- *  - FA = opcode + 3 regs + 12-bit shamt
- *  - FL = opcode + 2 regs + imm16
- *  - FJ = opcode + 24-bit addr
- * Let all instructions share consistent bit assignments
- */
 //===----------------------------------------------------------------------===//
 
 // Format specifies the encoding used by the instruction.  This is part of the
@@ -73,9 +64,6 @@ class Cpu0Inst<dag outs, dag ins, string asmstr, list<dag> pattern,
   bits<4> FormBits = Form.Value;
 
   // TSFlags layout should be kept in sync with Cpu0InstrInfo.h.
-  /* NOTE(fh):
-   ? What is this
-   */
   let TSFlags{3-0}   = FormBits;
 
   let DecoderNamespace = "Cpu0";
@@ -98,15 +86,9 @@ class FA<bits<8> op, dag outs, dag ins, string asmstr,
 
   let Opcode = op;
 
-  /* NOTE(fh):
-   * `let` overrides Inst defined in Cpu0Inst
-   */
   let Inst{23-20} = ra;
   let Inst{19-16} = rb;
   let Inst{15-12} = rc;
-  /* NOTE(fh):
-   * shamt : shift amount
-   */
   let Inst{11-0}  = shamt;
 }
 

@@ -12,17 +12,6 @@
 //===----------------------------------------------------------------------===//
 
 // We have banks of 16 registers each.
-/* NOTE(fh):
- * In .td files, a class describles the structure of how data is laied out,
- * while def's act as specific instances of the class.
- *
- * Cpu0Reg is derived from the Register class provided by llvm,
- * it inherits all fields from the Register class.
- *
- * Cpu0 reserve 4 bits for 16(2^4) reg's.
- *
- * `let` expressions allow overriding values initially defined in a superclass
- */
 class Cpu0Reg<bits<16> Enc, string n> : Register<n> {
   // For tablegen(... -gen-emitter)  in CMakeLists.txt
   let HWEncoding = Enc;
@@ -69,20 +58,7 @@ let Namespace = "Cpu0" in {
 //===----------------------------------------------------------------------===//
 //@Register Classes
 //===----------------------------------------------------------------------===//
-/* NOTE(fh):
- * CpuRegs is an *instance* of the RegisterClass provided by llvm
- * 
- * A RegisterClass instance is a set of Register instances
- *
- * TableGen is a llvm dsl, so the brackets do not mean template here,
- * it's a class-parameter syntax
- *
- * "cpu0" is the namespcae/target
- * 
- * (add ...) is the TableGen's way to build a list
- * llvm use it as a alloc preference order (earlier one are preferred),
- * unless stated otherwise
- */
+
 def CPURegs : RegisterClass<"Cpu0", [i32], 32, (add
   // Reserved
   ZERO, AT, 
