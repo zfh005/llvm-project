@@ -17,6 +17,7 @@
 
 #include "Cpu0Config.h"
 
+#include "MCTargetDesc/Cpu0BaseInfo.h"
 #include "MCTargetDesc/Cpu0ABIInfo.h"
 #include "Cpu0.h"
 #include "llvm/CodeGen/CallingConvLower.h"
@@ -26,13 +27,6 @@
 #include <deque>
 
 namespace llvm {
-  /* NOTE(fh):
-   * ISD: Instruction Selection DAG opcodes
-   * llvm has generic DAG nodes (ISD::ADD, ISD::LOAD...)
-   * 
-   * Introduce custom nodes when generic nodes aren't enough,
-   * or target specific patterns are needed
-   */
   namespace Cpu0ISD {
     enum NodeType {
       // Start the numbering from where ISD NodeType finishes.

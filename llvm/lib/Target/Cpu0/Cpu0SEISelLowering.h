@@ -1,5 +1,4 @@
-//===-- Cpu0ISEISelLowering.h - Cpu0ISE DAG Lowering Interface ----*- C++
-//-*-===//
+//===-- Cpu0ISEISelLowering.h - Cpu0ISE DAG Lowering Interface ----*- C++ -*-===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -20,24 +19,16 @@
 #include "Cpu0ISelLowering.h"
 #include "Cpu0RegisterInfo.h"
 
-/* NOTE(fh):
- * A place to override lowering behavior for this subtarget: Cpu0SE (32 bit)
- * 
- */
-
 namespace llvm {
-class Cpu0SETargetLowering : public Cpu0TargetLowering {
-  /* NOTE(fh):
-   * Inherits all base behavior (LowerFormalArguments, LowerReturn...)
-   */
+  class Cpu0SETargetLowering : public Cpu0TargetLowering  {
   public:
-  explicit Cpu0SETargetLowering(const Cpu0TargetMachine &TM,
-                                const Cpu0Subtarget &STI);
+    explicit Cpu0SETargetLowering(const Cpu0TargetMachine &TM,
+                                  const Cpu0Subtarget &STI);
 
-  SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
-
-private:
-};
-} // namespace llvm
+    SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
+  private:
+  };
+}
 
 #endif // Cpu0ISEISELLOWERING_H
+

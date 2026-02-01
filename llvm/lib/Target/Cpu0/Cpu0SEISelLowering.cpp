@@ -10,8 +10,8 @@
 // Subclass of Cpu0TargetLowering specialized for cpu032.
 //
 //===----------------------------------------------------------------------===//
-#include "Cpu0SEISelLowering.h"
 #include "Cpu0MachineFunction.h"
+#include "Cpu0SEISelLowering.h"
 
 #include "Cpu0RegisterInfo.h"
 #include "Cpu0TargetMachine.h"
@@ -27,31 +27,20 @@ using namespace llvm;
 
 #define DEBUG_TYPE "cpu0-isel"
 
-static cl::opt<bool> EnableCpu0TailCalls("enable-cpu0-tail-calls", cl::Hidden,
-                                         cl::desc("CPU0: Enable tail calls."),
-                                         cl::init(false));
+static cl::opt<bool>
+EnableCpu0TailCalls("enable-cpu0-tail-calls", cl::Hidden,
+                    cl::desc("CPU0: Enable tail calls."), cl::init(false));
 
-/* NOTE(fh):
- ! SE (standard edition) constructor configures legality + register classes
- * 
- * Runs the base class constructor fisrt ": Cpu0TargetLowering(TM, STI)"
- * 
- */
 //@Cpu0SETargetLowering {
 Cpu0SETargetLowering::Cpu0SETargetLowering(const Cpu0TargetMachine &TM,
                                            const Cpu0Subtarget &STI)
     : Cpu0TargetLowering(TM, STI) {
-  //@Cpu0SETargetLowering body {
+//@Cpu0SETargetLowering body {
   // Set up the register classes
-  /* NOTE(fh):
-   * tells llvm: Values of value type i32 can live in register class RC on target
-   *
-   * Cpu0::CPURegsRegClass is TableGen-generated
-   */
   addRegisterClass(MVT::i32, &Cpu0::CPURegsRegClass);
 
-  // must, computeRegisterProperties - Once all of the register classes are
-  //  added, this allows us to compute derived properties we expose.
+// must, computeRegisterProperties - Once all of the register classes are 
+//  added, this allows us to compute derived properties we expose.
   computeRegisterProperties(Subtarget.getRegisterInfo());
 }
 
@@ -61,19 +50,9 @@ SDValue Cpu0SETargetLowering::LowerOperation(SDValue Op,
   return Cpu0TargetLowering::LowerOperation(Op, DAG);
 }
 
-/* NOTE(fh):
- * For now, Cpu0's factory always returns the "SE" variant
- *
- * In the Cpu0SubTarget ctor: TLInfo(Cpu0TargetLowering::create(TM, *this))
- *
- * The construction chain right now is:
- * Cpu0Subtarget 
- * → Cpu0TargetLowering::create 
- * → createCpu0SETargetLowering 
- * → new Cpu0SETargetLowering
- */
 const Cpu0TargetLowering *
 llvm::createCpu0SETargetLowering(const Cpu0TargetMachine &TM,
                                  const Cpu0Subtarget &STI) {
   return new Cpu0SETargetLowering(TM, STI);
 }
+

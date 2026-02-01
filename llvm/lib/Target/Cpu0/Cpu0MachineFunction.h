@@ -33,6 +33,7 @@ public:
   Cpu0FunctionInfo(MachineFunction& MF)
   : MF(MF), 
     VarArgsFrameIndex(0), 
+    EmitNOAT(false),
     MaxCallFrameSize(0)
     {}
 
@@ -40,6 +41,9 @@ public:
 
   int getVarArgsFrameIndex() const { return VarArgsFrameIndex; }
   void setVarArgsFrameIndex(int Index) { VarArgsFrameIndex = Index; }
+
+  bool getEmitNOAT() const { return EmitNOAT; }
+  void setEmitNOAT() { EmitNOAT = true; }
 
 private:
   virtual void anchor();
@@ -49,6 +53,7 @@ private:
     /// VarArgsFrameIndex - FrameIndex for start of varargs area.
   int VarArgsFrameIndex;
 
+  bool EmitNOAT;
   unsigned MaxCallFrameSize;
 };
 //@1 }

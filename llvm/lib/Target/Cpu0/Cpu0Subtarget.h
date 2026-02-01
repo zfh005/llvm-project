@@ -47,7 +47,7 @@ public:
   }
 
   bool hasChapter3_2() const {
-    return false;
+    return true;
   }
 
   bool hasChapter3_3() const {
@@ -140,7 +140,6 @@ protected:
 
   InstrItineraryData InstrItins;
 
-  // TODO: why does it need a ref to TM
   const Cpu0TargetMachine &TM;
 
   Triple TargetTriple;

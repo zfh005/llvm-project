@@ -16,11 +16,11 @@
 
 #include "Cpu0Subtarget.h"
 #include "Cpu0TargetObjectFile.h"
-#include "llvm/CodeGen/Passes.h"
-#include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Support/CodeGen.h"
+#include "llvm/CodeGen/Passes.h"
+#include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Target/TargetOptions.h"
 
@@ -28,9 +28,6 @@ using namespace llvm;
 
 #define DEBUG_TYPE "cpu0"
 
-/* NOTE(fh):
- * Entry point to make Cpu0 discoverable
- */
 extern "C" void LLVMInitializeCpu0Target() {
   // Register the target.
   //- Big endian Target Machine
@@ -39,9 +36,6 @@ extern "C" void LLVMInitializeCpu0Target() {
   RegisterTargetMachine<Cpu0elTargetMachine> Y(TheCpu0elTarget);
 }
 
-/* NOTE(fh):
- * Some basic machine truths
- */
 static std::string computeDataLayout(const Triple &TT, StringRef CPU,
                                      const TargetOptions &Options,
                                      bool isLittle) {
@@ -89,7 +83,7 @@ Cpu0TargetMachine::Cpu0TargetMachine(const Target &T, const Triple &TT,
                                      Optional<CodeModel::Model> CM,
                                      CodeGenOpt::Level OL, bool JIT,
                                      bool isLittle)
-    //- Default is big endian
+  //- Default is big endian
     : LLVMTargetMachine(T, computeDataLayout(TT, CPU, Options, isLittle), TT,
                         CPU, FS, Options, getEffectiveRelocModel(JIT, RM),
                         getEffectiveCodeModel(CM, CodeModel::Small), OL),
@@ -103,7 +97,7 @@ Cpu0TargetMachine::Cpu0TargetMachine(const Target &T, const Triple &TT,
 
 Cpu0TargetMachine::~Cpu0TargetMachine() {}
 
-void Cpu0ebTargetMachine::anchor() {}
+void Cpu0ebTargetMachine::anchor() { }
 
 Cpu0ebTargetMachine::Cpu0ebTargetMachine(const Target &T, const Triple &TT,
                                          StringRef CPU, StringRef FS,
@@ -113,7 +107,7 @@ Cpu0ebTargetMachine::Cpu0ebTargetMachine(const Target &T, const Triple &TT,
                                          CodeGenOpt::Level OL, bool JIT)
     : Cpu0TargetMachine(T, TT, CPU, FS, Options, RM, CM, OL, JIT, false) {}
 
-void Cpu0elTargetMachine::anchor() {}
+void Cpu0elTargetMachine::anchor() { }
 
 Cpu0elTargetMachine::Cpu0elTargetMachine(const Target &T, const Triple &TT,
                                          StringRef CPU, StringRef FS,
@@ -123,30 +117,19 @@ Cpu0elTargetMachine::Cpu0elTargetMachine(const Target &T, const Triple &TT,
                                          CodeGenOpt::Level OL, bool JIT)
     : Cpu0TargetMachine(T, TT, CPU, FS, Options, RM, CM, OL, JIT, true) {}
 
-/* NOTE(fh):
- * F is a llvm IR function
- *
- * llvm let different functions be compiled with different target settings via
- * function attributes. When codegen is about to compile a function, it calls
- * TM.getSubtarget(F) to get (CPU + features) info.
- *
- */
 const Cpu0Subtarget *
 Cpu0TargetMachine::getSubtargetImpl(const Function &F) const {
-  std::string CPU = TargetCPU; //* NOTE(fh): These two are from the base class */
+  std::string CPU = TargetCPU;
   std::string FS = TargetFS;
-  /* NOTE(fh):
-   * SubtargetMap caches subtargets keyed by CPU+features
-   *
-   * Subtarget is what passes use, not TM directly
-   */
+
   auto &I = SubtargetMap[CPU + FS];
   if (!I) {
     // This needs to be done before we create a new subtarget since any
     // creation will depend on the TM and the code generation flags on the
     // function that reside in TargetOptions.
     resetTargetOptions(F);
-    I = std::make_unique<Cpu0Subtarget>(TargetTriple, CPU, FS, isLittle, *this);
+    I = std::make_unique<Cpu0Subtarget>(TargetTriple, CPU, FS, isLittle,
+                                         *this);
   }
   return I.get();
 }
@@ -157,7 +140,7 @@ namespace {
 class Cpu0PassConfig : public TargetPassConfig {
 public:
   Cpu0PassConfig(Cpu0TargetMachine &TM, PassManagerBase &PM)
-      : TargetPassConfig(TM, PM) {}
+    : TargetPassConfig(TM, PM) {}
 
   Cpu0TargetMachine &getCpu0TargetMachine() const {
     return getTM<Cpu0TargetMachine>();
@@ -169,9 +152,7 @@ public:
 };
 } // namespace
 
-/* NOTE(fh):
- * Hook for choosing codegen pipline
- */
 TargetPassConfig *Cpu0TargetMachine::createPassConfig(PassManagerBase &PM) {
   return new Cpu0PassConfig(*this, PM);
 }
+

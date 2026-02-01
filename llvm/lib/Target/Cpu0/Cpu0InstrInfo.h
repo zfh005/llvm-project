@@ -21,31 +21,15 @@
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
 
-/* NOTE(fh):
- * llvn-tblgen tool generates Cpu0GenInstrInfo.inc based on info in
- * Cpu0InstrInfo.td, Cpu0InstrInfo.h extracts the necessary code from
- * Cpu0GenInstrInfo.inc by defining: #define GET_INSTRINFO_HEADER
- *
- * Code btw #ifdef GET_INSTRINFO_HEADER and #endif // GET_INSTRINFO_HEADER is
- * extracted into Cpu0InstrInfo.h
- *
- * llvm uses a trick, a single generated .inc file can emit different code
- * depending on which macro is defined before inculding it.
- */
 #define GET_INSTRINFO_HEADER
 #include "Cpu0GenInstrInfo.inc"
 
 namespace llvm {
-/* NOTE(fh):
- *  Cpu0GenInstrInfo is a generated base class
- *
- */
+
 class Cpu0InstrInfo : public Cpu0GenInstrInfo {
   virtual void anchor();
-
 protected:
   const Cpu0Subtarget &Subtarget;
-
 public:
   explicit Cpu0InstrInfo(const Cpu0Subtarget &STI);
 
@@ -63,6 +47,7 @@ public:
 protected:
 };
 const Cpu0InstrInfo *createCpu0SEInstrInfo(const Cpu0Subtarget &STI);
-} // namespace llvm
+}
 
 #endif
+
