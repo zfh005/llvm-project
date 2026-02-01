@@ -16,12 +16,6 @@
 #include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/Support/Compiler.h"
 
-/* NOTE(fh):
- * A helper class called by AsmPrinter
- * Lower MachineInstr -> MCInst
- * 
- */
-
 namespace llvm {
   class MCContext;
   class MCInst;

@@ -11,11 +11,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-/* NOTE(fh):
- * Defines assembler syntax and general asm "policy" for the target
- * These are global asm formatting rules
- */
-
 #ifndef LLVM_LIB_TARGET_CPU0_MCTARGETDESC_CPU0MCASMINFO_H
 #define LLVM_LIB_TARGET_CPU0_MCTARGETDESC_CPU0MCASMINFO_H
 

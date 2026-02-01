@@ -25,18 +25,12 @@ using namespace llvm;
 
 #define DEBUG_TYPE "asm-printer"
 
-/* NOTE(fh):
- * Cpu0GenAsmWriter.inc contains the implementations of
- * Cpu0InstPrinter::pirintInstruction()  and getRegisterName(). Both of these
- * functions are generated based on the info defined in Cpu0InstrInfo.td
- */
-
 #define PRINT_ALIAS_INSTR
 #include "Cpu0GenAsmWriter.inc"
 
 void Cpu0InstPrinter::printRegName(raw_ostream &OS, unsigned RegNo) const {
-  //- getRegisterName(RegNo) defined in Cpu0GenAsmWriter.inc which indicate in
-  //   Cpu0.td.
+//- getRegisterName(RegNo) defined in Cpu0GenAsmWriter.inc which indicate in 
+//   Cpu0.td.
   OS << '$' << StringRef(getRegisterName(RegNo)).lower();
 }
 
@@ -46,8 +40,8 @@ void Cpu0InstPrinter::printInst(const MCInst *MI, uint64_t Address,
                                 raw_ostream &O) {
   // Try to print any aliases first.
   if (!printAliasInstr(MI, Address, O))
-    //@1 }
-    //- printInstruction(MI, O) defined in Cpu0GenAsmWriter.inc which came from
+//@1 }
+    //- printInstruction(MI, O) defined in Cpu0GenAsmWriter.inc which came from 
     //   Cpu0.td indicate.
     printInstruction(MI, Address, O);
   printAnnotation(O, Annot);
@@ -79,27 +73,28 @@ void Cpu0InstPrinter::printUnsignedImm(const MCInst *MI, int opNum,
     printOperand(MI, opNum, O);
 }
 
-void Cpu0InstPrinter::printMemOperand(const MCInst *MI, int opNum,
-                                      raw_ostream &O) {
+void Cpu0InstPrinter::
+printMemOperand(const MCInst *MI, int opNum, raw_ostream &O) {
   // Load/Store memory operands -- imm($reg)
   // If PIC target the target is loaded as the
   // pattern ld $t9,%call16($gp)
-  printOperand(MI, opNum + 1, O);
+  printOperand(MI, opNum+1, O);
   O << "(";
   printOperand(MI, opNum, O);
   O << ")";
 }
 
-// #if CH >= CH7_1
-//  The DAG data node, mem_ea of Cpu0InstrInfo.td, cannot be disabled by
-//  ch7_1, only opcode node can be disabled.
-void Cpu0InstPrinter::printMemOperandEA(const MCInst *MI, int opNum,
-                                        raw_ostream &O) {
+//#if CH >= CH7_1
+// The DAG data node, mem_ea of Cpu0InstrInfo.td, cannot be disabled by
+// ch7_1, only opcode node can be disabled.
+void Cpu0InstPrinter::
+printMemOperandEA(const MCInst *MI, int opNum, raw_ostream &O) {
   // when using stack locations for not load/store instructions
   // print the same way as all normal 3 operand instructions.
   printOperand(MI, opNum, O);
   O << ", ";
-  printOperand(MI, opNum + 1, O);
+  printOperand(MI, opNum+1, O);
   return;
 }
-// #endif
+//#endif
+

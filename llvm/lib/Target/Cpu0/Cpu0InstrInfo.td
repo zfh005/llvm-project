@@ -122,6 +122,15 @@ class AlignedStore<PatFrag Node> :
 
 // Load/Store PatFrags.
 def load_a          : AlignedLoad<load>;
+/* NOTE(fh):
+ * The <store> here is the SelectionDAG node ISD::STORE
+ * 
+ * A patFrag is just a named, resuable mini-pattern that can be 
+ * used inside TableGen instruction selection patterns,
+ * often with a bit of C++ predicate logic attached
+ *
+ * 
+ */
 def store_a         : AlignedStore<store>;
 
 //===----------------------------------------------------------------------===//
@@ -206,6 +215,16 @@ class RetBase<RegisterClass RC>: JumpFR<0x3c, "ret", RC> {
 /// Load and Store Instructions
 ///  aligned
 def LD     : LoadM32<0x01,  "ld",  load_a>;
+/* NOTE(fh):
+ * store_a: a patFrag
+ * ST: TableGen instruction name
+ * "st": assembly mnemonic printed to .s 
+ * 
+ * Definition for machine opcode Cpu0::ST
+ * def ST -> StoreM32 -> StoreM -> FMem -> FL -> Cpu0Inst -> llvm::Instruction
+ * ST comes from the class chain eventually inheriting llvm::Instruction,
+ * and that makes it a machine instruction
+ */
 def ST     : StoreM32<0x02, "st",  store_a>;
 
 /// Arithmetic Instructions (ALU Immediate)
