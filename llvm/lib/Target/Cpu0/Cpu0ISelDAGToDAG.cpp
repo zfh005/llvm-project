@@ -53,42 +53,18 @@ bool Cpu0DAGToDAGISel::runOnMachineFunction(MachineFunction &MF) {
   return Ret;
 }
 
-/* NOTE(fh):
- * In .td:
- * def addr : ComplexPattern<iPTR, 2, "SelectAddr", [frameindex],
- * [SDNPWantParent]>;
- * - Address operands in LD/ST patterns use addr
- * - addr expands into two operands (base, offset)
- * - The C++ "SelectAddr" must fill thouse outputs
- *
- * This is for the selection of "DATA DAG node with addr type"
- * This choose the addressing operands (operand decomposition)
- * The address expression in the DAG can be many shapes:
- * add(base, imm), add(reg, reg), Wrapper(GlobalAddress)
- * But Cpu0 LD/ST instr would only want operands in the form:
- *    LD Base, Offset
- * llvm need a way to take an arbitrary DAG address expression and decompose it
- * into the operands which instruction would expect.
- *
- * PatFrag vs ComplexPattern
- * - PatFrag: helps match the operation node (e.g. aligned store with certain
- *            contraints)
- *            -> a named DAG-op matcher (with optional predicate)
- * - ComplexPattern: helps match/decompose an operand (addr -> base + offset)
- *                   -> a named operand matcher/decomposer implemented in C++
- */
 //@SelectAddr {
 /// ComplexPattern used on Cpu0InstrInfo
 /// Used on Cpu0 Load/Store instructions
-bool Cpu0DAGToDAGISel::SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base,
-                                  SDValue &Offset) {
-  //@SelectAddr }
+bool Cpu0DAGToDAGISel::
+SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base, SDValue &Offset) {
+//@SelectAddr }
   EVT ValTy = Addr.getValueType();
   SDLoc DL(Addr);
 
   // If Parent is an unaligned f32 load or store, select a (base + index)
   // floating point load/store instruction (luxc1 or suxc1).
-  const LSBaseSDNode *LS = 0;
+  const LSBaseSDNode* LS = 0;
 
   if (Parent && (LS = dyn_cast<LSBaseSDNode>(Parent))) {
     EVT VT = LS->getMemoryVT();
@@ -102,26 +78,21 @@ bool Cpu0DAGToDAGISel::SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base,
 
   // if Address is FI, get the TargetFrameIndex.
   if (FrameIndexSDNode *FIN = dyn_cast<FrameIndexSDNode>(Addr)) {
-    Base = CurDAG->getTargetFrameIndex(FIN->getIndex(), ValTy);
+    Base   = CurDAG->getTargetFrameIndex(FIN->getIndex(), ValTy);
     Offset = CurDAG->getTargetConstant(0, DL, ValTy);
     return true;
   }
 
-  Base = Addr;
+  Base   = Addr;
   Offset = CurDAG->getTargetConstant(0, DL, ValTy);
   return true;
 }
 
-/* NOTE(fh):
- ! This is for the selection of "OP code DAG Node"
- * This choose the instruction (opcode-level)
- * Called for every node in SelectionDAG (ISD::ADD, Cpu0ISD::Ret)
- */
 //@Select {
 /// Select instructions not customized! Used for
 /// expanded, promoted and normal instructions
 void Cpu0DAGToDAGISel::Select(SDNode *Node) {
-  //@Select }
+//@Select }
   unsigned Opcode = Node->getOpcode();
 
   // If we have a custom node, we already have selected!
@@ -132,23 +103,15 @@ void Cpu0DAGToDAGISel::Select(SDNode *Node) {
   }
 
   // See if subclasses can handle this node.
-  /* NOTE(fh):
-   * trySelect is a pure virtual function, and is overridden by the derived
-   * class that handles target specific cases -> subtarget custom hook
-   */
   if (trySelect(Node))
     return;
 
-  switch (Opcode) {
-  default:
-    break;
+  switch(Opcode) {
+  default: break;
+
   }
 
-  /* NOTE(fh):
-   * SelectCode is the TableGen-generated matcher
-   * - It tries patterns from .td
-   * - If none match, it will throw an error
-   */
   // Select the default instruction
   SelectCode(Node);
 }
+

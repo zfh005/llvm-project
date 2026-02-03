@@ -71,6 +71,20 @@ class Cpu0Inst<dag outs, dag ins, string asmstr, list<dag> pattern,
   field bits<32> SoftFail = 0;
 }
 
+/* NOTE(fh):
+ * isPseudo -> must be expanded/eliminated later
+ * Need a placeholder "return" instruction that is easy to select from
+ * the DAG, but only becomes real after register allocation (post-RA expansion)
+ ? Why
+ */
+
+// Cpu0 Pseudo Instructions Format
+class Cpu0Pseudo<dag outs, dag ins, string asmstr, list<dag> pattern>:
+      Cpu0Inst<outs, ins, asmstr, pattern, IIPseudo, Pseudo> {
+  let isCodeGenOnly = 1;
+  let isPseudo = 1;
+}
+
 //===----------------------------------------------------------------------===//
 // Format A instruction class in Cpu0 : <|opcode|ra|rb|rc|cx|>
 //===----------------------------------------------------------------------===//

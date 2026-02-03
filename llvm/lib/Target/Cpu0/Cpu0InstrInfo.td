@@ -122,15 +122,6 @@ class AlignedStore<PatFrag Node> :
 
 // Load/Store PatFrags.
 def load_a          : AlignedLoad<load>;
-/* NOTE(fh):
- * The <store> here is the SelectionDAG node ISD::STORE
- * 
- * A patFrag is just a named, resuable mini-pattern that can be 
- * used inside TableGen instruction selection patterns,
- * often with a bit of C++ predicate logic attached
- *
- * 
- */
 def store_a         : AlignedStore<store>;
 
 //===----------------------------------------------------------------------===//
@@ -215,16 +206,6 @@ class RetBase<RegisterClass RC>: JumpFR<0x3c, "ret", RC> {
 /// Load and Store Instructions
 ///  aligned
 def LD     : LoadM32<0x01,  "ld",  load_a>;
-/* NOTE(fh):
- * store_a: a patFrag
- * ST: TableGen instruction name
- * "st": assembly mnemonic printed to .s 
- * 
- * Definition for machine opcode Cpu0::ST
- * def ST -> StoreM32 -> StoreM -> FMem -> FL -> Cpu0Inst -> llvm::Instruction
- * ST comes from the class chain eventually inheriting llvm::Instruction,
- * and that makes it a machine instruction
- */
 def ST     : StoreM32<0x02, "st",  store_a>;
 
 /// Arithmetic Instructions (ALU Immediate)
@@ -237,6 +218,22 @@ def ADDiu   : ArithLogicI<0x09, "addiu", add, simm16, immSExt16, CPURegs>;
 
 def JR      : JumpFR<0x3c, "jr", GPROut>;
 
+/* NOTE(fh):
+ ? Why do we need this when we already have a def of Cpu0Ret
+ * This is the instruction selection hook: match Cpu0ISD::Ret -> RetLR
+ * 
+ * This pattern would lower SelectionDAG Node Cpu0Ret into machine instruction RetLR
+ * 
+ * isReturn = 1, isTerminator = 1 ... these are flags that would tell llvm's pipeline that 
+ * this is a terminator/return-like instruction (affects scheduling, block structure, delay slot handling...)
+ * 
+ */
+
+let Predicates = [Ch3_4] in {
+let isReturn=1, isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
+  def RetLR : Cpu0Pseudo<(outs), (ins), "", [(Cpu0Ret)]>;
+}
+
 def RET     : RetBase<GPROut>;
 
 /// No operation
@@ -246,7 +243,9 @@ let addr=0 in
 //===----------------------------------------------------------------------===//
 //  Arbitrary patterns that map to one or more instructions
 //===----------------------------------------------------------------------===//
-
+/* NOTE(fh):
+ * Turn constants into existing instruction: constant 0 -> addiu $Reg, $zero, 0
+ */
 // Small immediates
 def : Pat<(i32 immSExt16:$in),
           (ADDiu ZERO, imm:$in)>;

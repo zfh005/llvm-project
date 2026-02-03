@@ -158,10 +158,6 @@ TargetPassConfig *Cpu0TargetMachine::createPassConfig(PassManagerBase &PM) {
   return new Cpu0PassConfig(*this, PM);
 }
 
-/* NOTE(fh):
- *  Entry point for integrating the selector
- *  createCpu0SEISelDag(...) constructs the actual pass object
- */
 // Install an instruction selector pass using
 // the ISelDag to gen Cpu0 code.
 bool Cpu0PassConfig::addInstSelector() {
