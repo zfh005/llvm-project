@@ -97,13 +97,6 @@ namespace llvm {
       ByValArgInfo() : FirstIdx(0), NumRegs(0), Address(0) {}
     };
 
-    /* NOTE(fh):
-     * This block defines class Cpu0CC, which wraps llvm's CCState and provides:
-     * - analyzeReturn(Outs, ...) for outgoing return values
-     * - analyzeCallReturn(Ins, ...) for return values coming back from calls
-     * In this way, LowerReturn do not have to hardcode reg choices
-     * It asks Cpu0CC to run the rules, and it would run RetCC from .td
-     */
     //@CH3_4 1 {
     /// Cpu0CC - This class provides methods used to analyze formal and call
     /// arguments and inquire about calling convention information.
