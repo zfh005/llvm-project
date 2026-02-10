@@ -22,10 +22,6 @@ def RetCC_Cpu0 : CallingConv<[
   CCDelegateTo<RetCC_Cpu0EABI>
 ]>;
 
-/* NOTE(fh):
- * Callee Saved Registers
- */
-
 def CSR_O32 : CalleeSavedRegs<(add LR, FP,
                                    (sequence "S%u", 1, 0))>;
 

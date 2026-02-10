@@ -36,11 +36,11 @@ Cpu0SEFrameLowering::Cpu0SEFrameLowering(const Cpu0Subtarget &STI)
 //@emitPrologue {
 void Cpu0SEFrameLowering::emitPrologue(MachineFunction &MF,
                                        MachineBasicBlock &MBB) const {
-  MachineFrameInfo &MFI = MF.getFrameInfo();
+  MachineFrameInfo &MFI    = MF.getFrameInfo();
   Cpu0FunctionInfo *Cpu0FI = MF.getInfo<Cpu0FunctionInfo>();
 
   const Cpu0SEInstrInfo &TII =
-      *static_cast<const Cpu0SEInstrInfo *>(STI.getInstrInfo());
+    *static_cast<const Cpu0SEInstrInfo*>(STI.getInstrInfo());
   const Cpu0RegisterInfo &RegInfo =
       *static_cast<const Cpu0RegisterInfo *>(STI.getRegisterInfo());
 
@@ -50,33 +50,22 @@ void Cpu0SEFrameLowering::emitPrologue(MachineFunction &MF,
   unsigned SP = Cpu0::SP;
   const TargetRegisterClass *RC = &Cpu0::GPROutRegClass;
 
-  /* NOTE(fh):
-   * By now, llvm has already computed locals + spills + alignment, so it's not
-   * counting virtual registers directly
-   */
   // First, compute final stack size.
   uint64_t StackSize = MFI.getStackSize();
 
   // No need to allocate space on the stack.
-  if (StackSize == 0 && !MFI.adjustsStack())
-    return;
+  if (StackSize == 0 && !MFI.adjustsStack()) return;
 
   MachineModuleInfo &MMI = MF.getMMI();
   const MCRegisterInfo *MRI = MMI.getContext().getRegisterInfo();
 
-  /* NOTE(fh):
-   * Move SP to the top of the current stack frame to allocate space for the
-   * current stack frame, as per calling convention.
-   *
-   * If not decrement SP, then storing a local like *st $2, 4($sp)* would
-   * overwrite memory that belongs to the caller
-   */
   // Adjust stack.
   TII.adjustStackPtr(SP, -StackSize, MBB, MBBI);
 
   // emit ".cfi_def_cfa_offset StackSize"
-  unsigned CFIIndex =
-      MF.addFrameInst(MCCFIInstruction::cfiDefCfaOffset(nullptr, StackSize));
+  unsigned CFIIndex = 
+      MF.addFrameInst(
+      MCCFIInstruction::cfiDefCfaOffset(nullptr, StackSize));
   BuildMI(MBB, MBBI, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
       .addCFIIndex(CFIIndex);
 
@@ -91,8 +80,7 @@ void Cpu0SEFrameLowering::emitPrologue(MachineFunction &MF,
     // Iterate over list of callee-saved registers and emit .cfi_offset
     // directives.
     for (std::vector<CalleeSavedInfo>::const_iterator I = CSI.begin(),
-                                                      E = CSI.end();
-         I != E; ++I) {
+           E = CSI.end(); I != E; ++I) {
       int64_t Offset = MFI.getObjectOffset(I->getFrameIdx());
       unsigned Reg = I->getReg();
       {
@@ -104,14 +92,15 @@ void Cpu0SEFrameLowering::emitPrologue(MachineFunction &MF,
       }
     }
   }
+
 }
 //}
 
 //@emitEpilogue {
 void Cpu0SEFrameLowering::emitEpilogue(MachineFunction &MF,
-                                       MachineBasicBlock &MBB) const {
+                                 MachineBasicBlock &MBB) const {
   MachineBasicBlock::iterator MBBI = MBB.getFirstTerminator();
-  MachineFrameInfo &MFI = MF.getFrameInfo();
+  MachineFrameInfo &MFI            = MF.getFrameInfo();
   Cpu0FunctionInfo *Cpu0FI = MF.getInfo<Cpu0FunctionInfo>();
 
   const Cpu0SEInstrInfo &TII =
@@ -135,61 +124,36 @@ void Cpu0SEFrameLowering::emitEpilogue(MachineFunction &MF,
 //}
 
 //@hasReservedCallFrame {
-bool Cpu0SEFrameLowering::hasReservedCallFrame(
-    const MachineFunction &MF) const {
+bool
+Cpu0SEFrameLowering::hasReservedCallFrame(const MachineFunction &MF) const {
   const MachineFrameInfo &MFI = MF.getFrameInfo();
-
-  /* NOTE(fh):
-   * Two strategies to reserve space for outgoing call arguments
-   * A. Reserved call frame (one-time allocation)
-   *    - Prologue allocates locals + max outgoing-args area all at once
-   *    - Simple + stable offsets / Might allocate a little more than needed
-   * B. No reserved call frame (allocate per call)
-   *    - Prologue:     $sp -= locals;
-   *    - Before call:  $sp -= call_arg_bypes
-   *    - After call:   $sp += call_arg_bypes
-   *    - Epilogue:     $sp +=locals
-   *    - Stack usage tighter / Offset becomes tricker
-   */
 
   // Reserve call frame if the size of the maximum call frame fits into 16-bit
   // immediate field and there are no variable sized objects on the stack.
   // Make sure the second register scavenger spill slot can be accessed with one
   // instruction.
   return isInt<16>(MFI.getMaxCallFrameSize() + getStackAlignment()) &&
-         !MFI.hasVarSizedObjects();
+    !MFI.hasVarSizedObjects();
 }
 //}
 
 /// Mark \p Reg and all registers aliasing it in the bitset.
-static void setAliasRegs(MachineFunction &MF, BitVector &SavedRegs,
-                         unsigned Reg) {
+static void setAliasRegs(MachineFunction &MF, BitVector &SavedRegs, unsigned Reg) {
   const TargetRegisterInfo *TRI = MF.getSubtarget().getRegisterInfo();
   for (MCRegAliasIterator AI(Reg, TRI, true); AI.isValid(); ++AI)
     SavedRegs.set(*AI);
 }
 
-/* NOTE(fh):
- * Once the spill registers are identified, the function in PEI
- * SpillCalleeSavedRegisters() will save/restore registers to/from stack slots
- * via the following code
- */
-
 //@determineCalleeSaves {
-// This method is called immediately before PrologEpilogInserter scans the
-//  physical registers used to determine what callee saved registers should be
-//  spilled. This method is optional.
+// This method is called immediately before PrologEpilogInserter scans the 
+//  physical registers used to determine what callee saved registers should be 
+//  spilled. This method is optional. 
 void Cpu0SEFrameLowering::determineCalleeSaves(MachineFunction &MF,
                                                BitVector &SavedRegs,
                                                RegScavenger *RS) const {
-  //@determineCalleeSaves-body
+//@determineCalleeSaves-body
   TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
   Cpu0FunctionInfo *Cpu0FI = MF.getInfo<Cpu0FunctionInfo>();
-
-  /* NOTE(fh):
-   * If the function makes calls, it must preserve return address (LR) according
-   * to calling convention rules
-   */
 
   if (MF.getFrameInfo().hasCalls())
     setAliasRegs(MF, SavedRegs, Cpu0::LR);
@@ -202,3 +166,4 @@ const Cpu0FrameLowering *
 llvm::createCpu0SEFrameLowering(const Cpu0Subtarget &ST) {
   return new Cpu0SEFrameLowering(ST);
 }
+

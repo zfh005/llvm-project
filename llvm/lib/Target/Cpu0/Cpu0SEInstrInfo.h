@@ -17,8 +17,8 @@
 #include "Cpu0Config.h"
 
 #include "Cpu0InstrInfo.h"
-#include "Cpu0MachineFunction.h"
 #include "Cpu0SERegisterInfo.h"
+#include "Cpu0MachineFunction.h"
 
 namespace llvm {
 
@@ -30,29 +30,26 @@ public:
 
   const Cpu0RegisterInfo &getRegisterInfo() const override;
 
-  /* NOTE(fh):
-   * Spilling hooks
-   */
+  void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
+                   const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
+                   bool KillSrc) const override;
 
-  void storeRegToStack(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
+  void storeRegToStack(MachineBasicBlock &MBB,
+                       MachineBasicBlock::iterator MI,
                        Register SrcReg, bool isKill, int FrameIndex,
                        const TargetRegisterClass *RC,
                        const TargetRegisterInfo *TRI,
                        int64_t Offset) const override;
 
-  void loadRegFromStack(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
+  void loadRegFromStack(MachineBasicBlock &MBB,
+                        MachineBasicBlock::iterator MI,
                         Register DestReg, int FrameIndex,
                         const TargetRegisterClass *RC,
                         const TargetRegisterInfo *TRI,
                         int64_t Offset) const override;
 
-  //@expandPostRAPseudo
+//@expandPostRAPseudo
   bool expandPostRAPseudo(MachineInstr &MI) const override;
-
-  /* NOTE(fh):
-   * The functions added in this section build the machanics of "adjust SP" and
-   * building immediates
-   */
 
   /// Adjust SP by Amount bytes.
   void adjustStackPtr(unsigned SP, int64_t Amount, MachineBasicBlock &MBB,
@@ -64,11 +61,13 @@ public:
   unsigned loadImmediate(int64_t Imm, MachineBasicBlock &MBB,
                          MachineBasicBlock::iterator II, const DebugLoc &DL,
                          unsigned *NewImm) const;
-
 private:
   void expandRetLR(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const;
+
+  
 };
 
-} // namespace llvm
+}
 
 #endif
+

@@ -83,23 +83,6 @@ using namespace llvm;
 //
 //===----------------------------------------------------------------------===//
 
-/* NOTE(fh):
- * (high addr)
- * | caller's frame ... |
- * +--------------------+
- * | incoming args on stack (if any) |
- * |  (for O32, stack arg area begins at +8) |
- * +--------------------+
- * | callee-saved spills (LR/FP/S*)  |
- * +--------------------+
- * | locals + temp spills (FrameIndex objects) |
- * +--------------------+
- * | padding / alignment |
- * +--------------------+
- * $sp -> bottom of this frame
- * (low addr)
- */
-
 const Cpu0FrameLowering *Cpu0FrameLowering::create(const Cpu0Subtarget &ST) {
   return llvm::createCpu0SEFrameLowering(ST);
 }

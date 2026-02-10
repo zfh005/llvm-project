@@ -30,6 +30,59 @@ Cpu0SEInstrInfo::Cpu0SEInstrInfo(const Cpu0Subtarget &STI)
 
 const Cpu0RegisterInfo &Cpu0SEInstrInfo::getRegisterInfo() const { return RI; }
 
+/* NOTE(fh):
+ * This function tells llvm how to perform an arbritary "copy reg -> reg"
+ *
+ * When llvm needs a general "copy", it will request through
+ * TargetInstrInfo::copyPhysReg
+ *
+ * llvm will need a copy when:
+ * - reg alloc
+ * - spill/reload materialization
+ * - ...
+ *
+ * Instr def MFHI in .td decsribe instruction, mainly apply during iSel (DAG ->
+ * MI)
+ *
+ * copyPhysReg describes register-move semantics used by many passes, and
+ * produce concrete instructions
+ * 
+ * HI/LO registers are accessed by a special set of MI
+ */
+void Cpu0SEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
+                                  MachineBasicBlock::iterator I,
+                                  const DebugLoc &DL, MCRegister DestReg,
+                                  MCRegister SrcReg, bool KillSrc) const {
+  unsigned Opc = 0, ZeroReg = 0;
+
+  if (Cpu0::CPURegsRegClass.contains(DestReg)) { // Copy to CPU Reg.
+    if (Cpu0::CPURegsRegClass.contains(SrcReg))
+      Opc = Cpu0::ADDu, ZeroReg = Cpu0::ZERO;
+    else if (SrcReg == Cpu0::HI)
+      Opc = Cpu0::MFHI, SrcReg = 0;
+    else if (SrcReg == Cpu0::LO)
+      Opc = Cpu0::MFLO, SrcReg = 0;
+  } else if (Cpu0::CPURegsRegClass.contains(SrcReg)) { // Copy from CPU Reg.
+    if (DestReg == Cpu0::HI)
+      Opc = Cpu0::MTHI, DestReg = 0;
+    else if (DestReg == Cpu0::LO)
+      Opc = Cpu0::MTLO, DestReg = 0;
+  }
+
+  assert(Opc && "Cannot copy registers");
+
+  MachineInstrBuilder MIB = BuildMI(MBB, I, DL, get(Opc));
+
+  if (DestReg)
+    MIB.addReg(DestReg, RegState::Define);
+
+  if (ZeroReg)
+    MIB.addReg(ZeroReg);
+
+  if (SrcReg)
+    MIB.addReg(SrcReg, getKillRegState(KillSrc));
+}
+
 void Cpu0SEInstrInfo::storeRegToStack(MachineBasicBlock &MBB,
                                       MachineBasicBlock::iterator I,
                                       Register SrcReg, bool isKill, int FI,
@@ -43,19 +96,6 @@ void Cpu0SEInstrInfo::storeRegToStack(MachineBasicBlock &MBB,
 
   Opc = Cpu0::ST;
   assert(Opc && "Register class not handled!");
-
-  /* NOTE(fh):
-   * Uses FrameIndex here.
-   *
-   * At this stage, stack objs are still "abstract"(<fi#0>)
-   * PEI will later call eliminateFrameIndex() to convert it into something like
-   * 4($sp)
-   * 
-   * Spill here emits: st $r, <fi#k>, 0
-   * 
-   * stores/loads can be emitted before their concrete stack address are known
-   */
-
   BuildMI(MBB, I, DL, get(Opc))
       .addReg(SrcReg, getKillRegState(isKill))
       .addFrameIndex(FI)
@@ -109,25 +149,6 @@ void Cpu0SEInstrInfo::adjustStackPtr(unsigned SP, int64_t Amount,
   unsigned ADDu = Cpu0::ADDu;
   unsigned ADDiu = Cpu0::ADDiu;
 
-  /* NOTE(fh):
-   * Common backend pattern: fast path for small immediates, fallback for large
-   * ones
-   *
-   * Common llvm codegen idioms: BuildMI + .addreg/.addImm
-   * A. BuildMI(): Create a MachineInstr and insters it into the MBB
-   *    - MBB: which block to insert to
-   *    - I: insert before iterator I
-   *    - get(ADDiu): the instruction descriptor for opcode ADDiu
-   *    - SP (the last arg): destination reg
-   *
-   * B. addReg(SP)
-   *    - Adds a register operand
-   *
-   * C. addReg(Reg, RegState::Kill)
-   *    - Regstate::Kill means the reg value is not used anymore after this
-   *      instruction
-   *    - helps register allocation / liveness
-   */
   if (isInt<16>(Amount)) {
     // addiu sp, sp, amount
     BuildMI(MBB, I, DL, get(ADDiu), SP).addReg(SP).addImm(Amount);

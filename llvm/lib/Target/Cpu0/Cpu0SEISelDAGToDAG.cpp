@@ -13,11 +13,11 @@
 
 #include "Cpu0SEISelDAGToDAG.h"
 
-#include "MCTargetDesc/Cpu0BaseInfo.h"
 #include "Cpu0.h"
 #include "Cpu0AnalyzeImmediate.h"
 #include "Cpu0MachineFunction.h"
 #include "Cpu0RegisterInfo.h"
+#include "MCTargetDesc/Cpu0BaseInfo.h"
 #include "llvm/CodeGen/MachineConstantPool.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
@@ -42,8 +42,58 @@ bool Cpu0SEDAGToDAGISel::runOnMachineFunction(MachineFunction &MF) {
   return Cpu0DAGToDAGISel::runOnMachineFunction(MF);
 }
 
-void Cpu0SEDAGToDAGISel::processFunctionAfterISel(MachineFunction &MF) {
+/* NOTE(fh):
+ * Sample program:
+ *
+ * int b = 11;
+ * b = (b + 1) % 12;
+ *
+ * A. Target independent optimization:
+ * When llvm sees div/remdiv by a constant, it often replaces it using a
+ * magic-number multiply plus shift/add/sub. So % 12 will become a DAG
+ * containing ISD::MULHS with a constant, sra, srl, add/sub
+ *
+ * With this target independent opt, Cpu0ISD::DivRem path is bypassed entirely
+ *
+ * The backend should be able to iSel whatever node llvm optimize to
+ *
+ * B. Why custom iSel for ISD::MULHS/MULHU?
+ * ISD::MULHS means to return the high 32 bits of a signed 32x32->64 mult
+ * This instruction is not supported by Cpu0's ISA directly, and it has to be
+ * lowered to a sequence of MULT/MULTu + (MFHI) + (MFLO)
+ *
+ * C. Why not impl teySelect() ISD::REM/DIV?
+ * - MULHS/MULHU: best handled in trySelect because it’s a single DAG value that
+ * needs a multi-instruction expansion (MULT[u] → MFHI) and there’s no clean 1:1
+ * TableGen pattern.
+ * 
+ * - DIV/REM: better handled by legalization + DAGCombine + target node +
+ * CopyFromReg, because div/rem is naturally a multi-result operation with
+ * special registers and ordering, and LLVM already has the right generic
+ * structure for that (SDIVREM/UDIVREM, chains, glue, CopyFromReg). Also, it
+ * will keep trySelect() clean.
+ *
+ */
+/// Select multiply instructions.
+std::pair<SDNode *, SDNode *>
+Cpu0SEDAGToDAGISel::selectMULT(SDNode *N, unsigned Opc, const SDLoc &DL, EVT Ty,
+                               bool HasLo, bool HasHi) {
+  SDNode *Lo = 0, *Hi = 0;
+  SDNode *Mul = CurDAG->getMachineNode(Opc, DL, MVT::Glue, N->getOperand(0),
+                                       N->getOperand(1));
+  SDValue InFlag = SDValue(Mul, 0);
+
+  if (HasLo) {
+    Lo = CurDAG->getMachineNode(Cpu0::MFLO, DL, Ty, MVT::Glue, InFlag);
+    InFlag = SDValue(Lo, 1);
+  }
+  if (HasHi)
+    Hi = CurDAG->getMachineNode(Cpu0::MFHI, DL, Ty, InFlag);
+
+  return std::make_pair(Lo, Hi);
 }
+
+void Cpu0SEDAGToDAGISel::processFunctionAfterISel(MachineFunction &MF) {}
 
 //@selectNode
 bool Cpu0SEDAGToDAGISel::trySelect(SDNode *Node) {
@@ -62,9 +112,27 @@ bool Cpu0SEDAGToDAGISel::trySelect(SDNode *Node) {
   EVT NodeTy = Node->getValueType(0);
   unsigned MultOpc;
 
-  switch(Opcode) {
-  default: break;
+  switch (Opcode) {
+  default:
+    break;
 
+  case ISD::MULHS:
+  case ISD::MULHU: {
+    MultOpc = (Opcode == ISD::MULHU ? Cpu0::MULTu : Cpu0::MULT);
+    auto LoHi = selectMULT(Node, MultOpc, DL, NodeTy, false, true);
+    ReplaceNode(Node, LoHi.second);
+    return true;
+  }
+
+  case ISD::Constant: {
+    const ConstantSDNode *CN = dyn_cast<ConstantSDNode>(Node);
+    unsigned Size = CN->getValueSizeInBits(0);
+
+    if (Size == 32)
+      break;
+
+    return true;
+  }
   }
 
   return false;
@@ -74,4 +142,3 @@ FunctionPass *llvm::createCpu0SEISelDag(Cpu0TargetMachine &TM,
                                         CodeGenOpt::Level OptLevel) {
   return new Cpu0SEDAGToDAGISel(TM, OptLevel);
 }
-

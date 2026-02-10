@@ -68,18 +68,6 @@ getReservedRegs(const MachineFunction &MF) const {
   return Reserved;
 }
 
-
-/* NOTE(fh):
- * Turn abstract stack references into real addressing
- * 
- * ST %V0, <fi#0>, 0 -> st $2, 4($sp)
- * 
- * PEI calls it in replaceFrameIndices() after it has:
- *  - assign stack slots
- *  - computed final object offsets
- *  - inserted prologue/epilogue (so stack size if final)
- */
-
 //@eliminateFrameIndex {
 //- If no eliminateFrameIndex(), it will hang on run. 
 // pure virtual method
@@ -141,9 +129,6 @@ eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
   int64_t Offset;
     Offset = spOffset + (int64_t)stackSize;
 
-  /* NOTE(fh):
-   * Add offset to access field inside an object
-   */
   Offset    += MI.getOperand(i+1).getImm();
 
   LLVM_DEBUG(errs() << "Offset     : " << Offset << "\n" << "<--------->\n");
@@ -163,9 +148,6 @@ eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
     assert(0 && "(!MI.isDebugValue() && !isInt<16>(Offset))");
   }
 
-  /* NOTE(fh):
-   * The actual write: change frame index to (reg, imm)
-   */
   MI.getOperand(i).ChangeToRegister(FrameReg, false);
   MI.getOperand(i+1).ChangeToImmediate(Offset);
 }

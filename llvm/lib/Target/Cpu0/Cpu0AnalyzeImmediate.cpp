@@ -67,7 +67,7 @@ void Cpu0AnalyzeImmediate::GetInstSeqLs(uint64_t Imm, unsigned RemSize,
   }
 
   GetInstSeqLsADDiu(Imm, RemSize, SeqLs);
-  
+
   // If bit 15 is cleared, it doesn't make a difference whether the last
   // instruction is an ADDiu or ORi. In that case, do not call GetInstSeqLsORi.
   if (Imm & 0x8000) {
